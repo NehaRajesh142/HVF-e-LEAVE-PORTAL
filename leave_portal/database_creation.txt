@@ -1,0 +1,84 @@
+CREATE DATABASE leave_portal_db;
+USE leave_portal_db;
+
+CREATE TABLE employee (
+    emp_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    role ENUM('User','Admin') DEFAULT 'User',
+    gender ENUM('Male','Female','Transgender') NOT NULL,
+    department VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE leave_type (
+    leave_type_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    max_days INT DEFAULT 0,
+    requires_certificate BOOLEAN DEFAULT FALSE,
+    gender_restriction ENUM('None','Male','Female','Transgender') DEFAULT 'None',
+    description TEXT
+);
+
+INSERT INTO leave_type (name, max_days, requires_certificate, gender_restriction, description)
+VALUES
+('Earned Leave (EL)', 300, FALSE, 'None', 'Leave earned by duty period, credited twice a year.'),
+('Half Pay Leave (HPL)', 0, FALSE, 'None', 'Leave on half pay for personal or medical reasons.'),
+('Commuted Leave', 180, TRUE, 'None', 'Half-pay leave converted to full pay with certificate.'),
+('Leave Not Due (LND)', 360, TRUE, 'None', 'Advance leave on medical grounds.'),
+('Extraordinary Leave (EOL)', 720, FALSE, 'None', 'Leave without pay for study or medical reasons.'),
+('Maternity Leave', 180, FALSE, 'Female', 'For female employees for childbirth.'),
+('Paternity Leave', 15, FALSE, 'Male', 'For male employees within 6 months of childbirth.'),
+('Adoption Leave', 180, FALSE, 'None', 'For employees adopting a child under 1 year.'),
+('Child Care Leave', 730, FALSE, 'Female', 'For female employees up to 2 children.'),
+('Study Leave', 730, FALSE, 'None', 'For pursuing higher studies or training.'),
+('Special Leave', 90, FALSE, 'None', 'For injury, court, sports, or exceptional cases.');
+
+CREATE TABLE leave_balance (
+    balance_id INT AUTO_INCREMENT PRIMARY KEY,
+    emp_id INT NOT NULL,
+    leave_type_id INT NOT NULL,
+    remaining_days INT DEFAULT 0,
+    FOREIGN KEY (emp_id) REFERENCES employee(emp_id) ON DELETE CASCADE,
+    FOREIGN KEY (leave_type_id) REFERENCES leave_type(leave_type_id) ON DELETE CASCADE
+);
+
+CREATE TABLE leave_application (
+    leave_id INT AUTO_INCREMENT PRIMARY KEY,
+    emp_id INT NOT NULL,
+    leave_type_id INT NOT NULL,
+    approver_id INT,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    total_days INT NOT NULL,
+    reason TEXT,
+    certificate VARCHAR(255),
+    status ENUM('Pending','Approved','Rejected') DEFAULT 'Pending',
+    remarks TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (emp_id) REFERENCES employee(emp_id) ON DELETE CASCADE,
+    FOREIGN KEY (leave_type_id) REFERENCES leave_type(leave_type_id),
+    FOREIGN KEY (approver_id) REFERENCES employee(emp_id)
+);
+
+CREATE TABLE logs (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    emp_id INT NOT NULL,
+    action VARCHAR(100),
+    details TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (emp_id) REFERENCES employee(emp_id)
+);
+
+-- Admin
+INSERT INTO employee (name, email, password, role, gender, department)
+VALUES ('Admin User', 'admin@hvf.in', 'admin123', 'Admin', 'Male', 'HR');
+
+-- Male User
+INSERT INTO employee (name, email, password, role, gender, department)
+VALUES ('Rahul Mehta', 'rahul@hvf.in', 'rahul123', 'User', 'Male', 'Engineering');
+
+-- Female User
+INSERT INTO employee (name, email, password, role, gender, department)
+VALUES ('Neha Rajesh', 'neha@hvf.in', 'neha123', 'User', 'Female', 'IT');
